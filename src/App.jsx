@@ -83,12 +83,12 @@ async function pdfBlobToImages(blob, name, onProgress) {
   for (let i = 1; i <= pdf.numPages; i++) {
     onProgress(i, pdf.numPages, name);
     const page = await pdf.getPage(i);
-    const viewport = page.getViewport({ scale: 1.4 });
+    const viewport = page.getViewport({ scale: 1.0 });
     const canvas = document.createElement("canvas");
     canvas.width = viewport.width;
     canvas.height = viewport.height;
     await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
-    images.push({ pageNum: i, fileName: name, base64: canvas.toDataURL("image/jpeg", 0.7).split(",")[1] });
+    images.push({ pageNum: i, fileName: name, base64: canvas.toDataURL("image/jpeg", 0.5).split(",")[1] });
   }
   return images;
 }
@@ -287,7 +287,7 @@ export default function PlanComparator() {
       { type: "text", text: `[${lbl} — ${p.fileName} p.${p.pageNum}]` },
       { type: "image", source: { type: "base64", media_type: "image/jpeg", data: p.base64 } }
     ]);
-    const resp = await fetch("/api/claude", {
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
       body: JSON.stringify({
@@ -315,7 +315,7 @@ export default function PlanComparator() {
       setP("Reading NEW plan set…", 0);
       const newImages = await filesToImages(newFiles, "NEW");
       setStatus("comparing");
-      const BATCH = 3;
+      const BATCH = 2;
       const maxPages = Math.max(oldImages.length, newImages.length);
       const totalBatches = Math.ceil(maxPages / BATCH);
       const allChanges = [], summaries = [];
