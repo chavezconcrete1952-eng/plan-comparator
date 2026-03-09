@@ -287,7 +287,7 @@ export default function PlanComparator() {
       { type: "text", text: `[${lbl} — ${p.fileName} p.${p.pageNum}]` },
       { type: "image", source: { type: "base64", media_type: "image/jpeg", data: p.base64 } }
     ]);
-    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    const resp = await fetch("/api/claude", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
       body: JSON.stringify({
