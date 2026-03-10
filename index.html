@@ -91,7 +91,7 @@ select{background:#181818;border:1px solid #252525;border-radius:5px;color:#aaa;
     <div class="brand">CHAVEZ CONCRETE</div>
     <div class="title">PLAN SET COMPARATOR</div>
   </div>
-  <div class="ver">v5.0 · Concrete Scope · Building Groups · SOV Check</div>
+  <div class="ver">v5.1 · Concrete Scope · Rate Limit Safe · SOV Check</div>
 </div>
 
 <div class="wrap">
@@ -317,25 +317,41 @@ async function filesToText(files,side,setP){
   }
   return all;
 }
-function chunkText(text,size=12000){
+function chunkText(text,size=6000){
   const chunks=[];
   for(let i=0;i<text.length;i+=size)chunks.push(text.slice(i,i+size));
   return chunks.length?chunks:['(empty)'];
 }
 
 // ── Claude API ──
-async function callClaude(body){
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+async function callClaude(body, retries=4){
   const apiKey=document.getElementById('apiKey').value.trim();
-  const resp=await fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',
-    headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-    body:JSON.stringify(body)
-  });
-  if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error?.message||`HTTP ${resp.status}`);}
-  const data=await resp.json();
-  const text=(data.content||[]).map(c=>c.text||'').join('');
-  try{return JSON.parse(text.replace(/```json|```/g,'').trim());}
-  catch{return null;}
+  for(let attempt=0; attempt<=retries; attempt++){
+    try {
+      const resp=await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify(body)
+      });
+      if(resp.status===429){
+        const waitSec = Math.pow(2, attempt+1) * 15; // 30s, 60s, 120s, 240s
+        setP(`Rate limit hit — waiting ${waitSec}s before retry (attempt ${attempt+1}/${retries})…`, null);
+        await sleep(waitSec * 1000);
+        continue;
+      }
+      if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error?.message||`HTTP ${resp.status}`);}
+      const data=await resp.json();
+      const text=(data.content||[]).map(c=>c.text||'').join('');
+      try{return JSON.parse(text.replace(/```json|```/g,'').trim());}
+      catch{return null;}
+    } catch(e) {
+      if(attempt===retries) throw e;
+      await sleep(15000);
+    }
+  }
+  throw new Error('Rate limit retries exhausted. Wait 60s and try again.');
 }
 
 function setP(label,pct){
@@ -377,6 +393,7 @@ async function runComparison(){
       setP(`Analyzing concrete scope — section ${i+1} of ${total}…`,Math.round(i/total*100));
       const oc=oldChunks[i]||'(not in old revision)';
       const nc=newChunks[i]||'(deleted in new revision)';
+      if(i>0) await sleep(3000); // pace requests to avoid rate limit
       const res=await callClaude({
         model:'claude-sonnet-4-5',max_tokens:4000,system:SYSTEM_PROMPT,
         messages:[{role:'user',content:`Compare chunk ${i+1} of ${total} for concrete scope changes.\n\nOLD PLAN TEXT:\n${oc}\n\nNEW PLAN TEXT:\n${nc}\n\nReturn only JSON with concrete changes.`}]
