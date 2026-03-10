@@ -1,13 +1,648 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Chavez Concrete — Plan Comparator</title>
-    <style>* { margin: 0; padding: 0; box-sizing: border-box; } body { background: #0f0f0f; }</style>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Chavez Concrete — Plan Set Comparator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0f0f0f;color:#ddd;font-family:'Courier New',monospace;min-height:100vh}
+.header{background:#0a0a0a;border-bottom:2px solid #1a1a1a;padding:14px 26px;display:flex;align-items:center;gap:12px}
+.bar{background:#E8A838;width:4px;height:32px;border-radius:2px}
+.brand{color:#E8A838;font-size:8px;letter-spacing:3px;margin-bottom:1px}
+.title{color:#fff;font-size:16px;font-weight:700;letter-spacing:1px}
+.ver{margin-left:auto;color:#2a2a2a;font-size:8px}
+.wrap{padding:20px 26px;max-width:1100px;margin:0 auto}
+.card{background:#141414;border:1px solid #1e1e1e;border-radius:8px;padding:13px 16px;margin-bottom:14px}
+.lbl{color:#444;font-size:8px;letter-spacing:2px;margin-bottom:6px}
+input[type=password],input[type=text]{background:#0a0a0a;border:1px solid #252525;border-radius:5px;padding:7px 11px;color:#ccc;font-family:monospace;font-size:12px;width:100%;outline:none}
+.row{display:flex;align-items:center;gap:9px;margin-top:7px}
+.row label{color:#444;font-size:9px;cursor:pointer}
+.saved{color:#5BAD6F;font-size:8px}
+.link{color:#2a2a2a;font-size:8px;margin-left:auto;text-decoration:none}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:5px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px}
+.drop{border:2px dashed #252525;border-radius:10px;padding:18px 14px;cursor:pointer;background:#141414;min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;transition:all .2s;text-align:center}
+.drop-icon{font-size:22px}
+.drop-lbl{font-size:10px;font-weight:700;letter-spacing:1px}
+.drop-hint{color:#2a2a2a;font-size:9px;line-height:1.6}
+.file-item{color:#777;font-size:9px;background:#1a1a1a;border-radius:3px;padding:2px 7px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%;text-align:left}
+.hints{display:flex;justify-content:space-between;margin-bottom:14px}
+.hint-l{color:#222;font-size:8px}
+.clear-btn{background:none;border:none;color:#2a2a2a;font-size:8px;cursor:pointer;font-family:monospace}
+.run-btn{width:100%;padding:13px;border-radius:7px;border:none;cursor:pointer;background:linear-gradient(135deg,#E8A838,#C87820);color:#000;font-family:monospace;font-size:12px;font-weight:700;letter-spacing:2px;margin-bottom:16px}
+.run-btn:disabled{background:#141414;color:#2a2a2a;cursor:not-allowed}
+.progress-card{background:#141414;border:1px solid #1e1e1e;border-radius:7px;padding:14px;margin-bottom:14px}
+.prog-lbl{color:#E8A838;font-size:10px;margin-bottom:8px}
+.prog-bar{background:#1a1a1a;border-radius:3px;height:3px}
+.prog-fill{background:#E8A838;height:100%;border-radius:3px;transition:width .4s}
+.error-card{background:#1a0808;border:1px solid #D95F5F33;border-radius:7px;padding:12px;margin-bottom:14px}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}
+.stat{background:#141414;border:1px solid #1e1e1e;border-radius:7px;padding:10px 13px}
+.stat-lbl{color:#2a2a2a;font-size:7px;letter-spacing:2px;margin-bottom:3px}
+.stat-val{font-size:16px;font-weight:700}
+.summary-card{background:#141414;border:1px solid #1e1e1e;border-radius:7px;padding:12px 16px;margin-bottom:14px}
+.tabs{display:flex;margin-bottom:14px;border-bottom:1px solid #1a1a1a}
+.tab{background:none;border:none;border-bottom:2px solid transparent;color:#444;font-family:monospace;font-size:10px;font-weight:700;letter-spacing:1px;padding:7px 14px;cursor:pointer;margin-bottom:-1px}
+.tab.active{color:#E8A838;border-bottom-color:#E8A838}
+.filters{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+select{background:#181818;border:1px solid #252525;border-radius:5px;color:#aaa;font-family:monospace;font-size:9px;padding:5px 9px;cursor:pointer}
+.bldg-group{margin-bottom:18px}
+.bldg-header{background:#1a1a1a;border:1px solid #252525;border-radius:6px;padding:9px 13px;margin-bottom:8px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.bldg-name{color:#E8A838;font-size:12px;font-weight:700;letter-spacing:1px}
+.bldg-counts{display:flex;gap:8px;margin-left:auto}
+.bcount{font-size:8px;font-family:monospace;padding:2px 6px;border-radius:3px;font-weight:700}
+.change{background:#181818;border:1px solid #1e1e1e;border-radius:6px;margin-bottom:4px;overflow:hidden}
+.change.crit{border-color:#D95F5F44}
+.change.imp{border-color:#E8A83833}
+.change-head{padding:10px 13px;cursor:pointer;display:flex;gap:9px;align-items:flex-start}
+.change-num{color:#2a2a2a;font-size:9px;min-width:20px;padding-top:2px}
+.change-body{flex:1;min-width:0}
+.change-meta{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:4px;align-items:center}
+.change-sheet{color:#fff;font-size:11px;font-weight:700}
+.change-desc{color:#888;font-size:11px;line-height:1.5}
+.change-detail{border-top:1px solid #1e1e1e;padding:9px 13px 9px 42px;display:flex;flex-direction:column;gap:6px}
+.before{background:#1a0808;border:1px solid #D95F5F22;border-radius:4px;padding:5px 9px}
+.after{background:#081a0e;border:1px solid #5BAD6F22;border-radius:4px;padding:5px 9px}
+.fnote{background:#1a1200;border:1px solid #E8A83833;border-radius:4px;padding:5px 9px}
+.sovmatch{background:#0a0a1a;border:1px solid #4A90D933;border-radius:4px;padding:5px 9px}
+.dl{font-size:8px;font-family:monospace;margin-bottom:2px}
+.dv{color:#eee;font-size:11px}
+.badge{font-size:8px;font-family:monospace;font-weight:700;border-radius:3px;padding:1px 5px;border:1px solid}
+.field-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.print-btn{background:#E8A838;color:#000;border:none;border-radius:5px;padding:6px 14px;font-family:monospace;font-size:10px;font-weight:700;cursor:pointer}
+.no-results{color:#333;text-align:center;padding:30px;font-size:11px}
+.sov-section{background:#141414;border:1px solid #1e1e1e;border-radius:7px;padding:12px 16px;margin-bottom:14px}
+.sov-item{display:flex;gap:10px;padding:6px 0;border-bottom:1px solid #1a1a1a;font-size:11px;align-items:flex-start}
+.sov-code{color:#E8A838;font-family:monospace;font-size:10px;min-width:80px}
+.sov-desc{color:#aaa;flex:1}
+.sov-impact{font-size:9px;font-family:monospace;font-weight:700;padding:2px 6px;border-radius:3px}
+.concrete-type{display:inline-flex;gap:4px;align-items:center}
+.ct-dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="bar"></div>
+  <div>
+    <div class="brand">CHAVEZ CONCRETE</div>
+    <div class="title">PLAN SET COMPARATOR</div>
+  </div>
+  <div class="ver">v5.0 · Concrete Scope · Building Groups · SOV Check</div>
+</div>
+
+<div class="wrap">
+  <!-- API Key -->
+  <div class="card">
+    <div class="lbl">ANTHROPIC API KEY</div>
+    <input type="password" id="apiKey" placeholder="sk-ant-..." oninput="handleKey(this.value)"/>
+    <div class="row">
+      <input type="checkbox" id="rememberKey" onchange="handleRemember(this.checked)" style="accent-color:#E8A838;cursor:pointer"/>
+      <label for="rememberKey">Remember key on this device</label>
+      <span id="savedBadge" class="saved" style="display:none">✓ SAVED</span>
+      <a class="link" href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
+    </div>
+  </div>
+
+  <!-- Project + SOV -->
+  <div class="grid3">
+    <div style="grid-column:1/3">
+      <input type="text" id="projectName" placeholder="Project name (e.g. Project Ranger — Rio Rancho)" style="background:#141414;border:1px solid #1e1e1e;border-radius:7px;padding:8px 13px;color:#777;font-size:10px"/>
+    </div>
+    <div class="drop" id="sovDrop" ondragover="dov(event,'sov')" ondragleave="dol('sov')" ondrop="ddr(event,'sov')" onclick="document.getElementById('sovInput').click()" style="min-height:42px;padding:8px 13px;border-radius:7px;flex-direction:row;justify-content:flex-start;gap:8px">
+      <input type="file" id="sovInput" accept=".pdf,.xlsx,.xls,.csv" style="display:none" onchange="addSOV(this.files)"/>
+      <span style="font-size:14px">📋</span>
+      <div>
+        <div style="color:#4A90D9;font-size:9px;font-weight:700;letter-spacing:1px">SOV / PROPOSAL</div>
+        <div id="sovName" style="color:#2a2a2a;font-size:8px">Drop or click to upload (optional)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Drop Zones -->
+  <div class="grid2">
+    <div class="drop" id="oldDrop" ondragover="dov(event,'old')" ondragleave="dol('old')" ondrop="ddr(event,'old')" onclick="document.getElementById('oldInput').click()">
+      <input type="file" id="oldInput" accept=".pdf,.zip" multiple style="display:none" onchange="addFiles('old',this.files)"/>
+      <div class="drop-icon">📂</div>
+      <div class="drop-lbl" style="color:#D95F5F">OLD PLAN SET — Previous Revision</div>
+      <div class="drop-hint">Drop ZIP or PDFs · Click to browse</div>
+      <div id="oldList" style="width:100%"></div>
+    </div>
+    <div class="drop" id="newDrop" ondragover="dov(event,'new')" ondragleave="dol('new')" ondrop="ddr(event,'new')" onclick="document.getElementById('newInput').click()">
+      <input type="file" id="newInput" accept=".pdf,.zip" multiple style="display:none" onchange="addFiles('new',this.files)"/>
+      <div class="drop-icon">📂</div>
+      <div class="drop-lbl" style="color:#5BAD6F">NEW PLAN SET — Current Revision</div>
+      <div class="drop-hint">Drop ZIP or PDFs · Click to browse</div>
+      <div id="newList" style="width:100%"></div>
+    </div>
+  </div>
+  <div class="hints">
+    <div class="hint-l">✓ ZIP supported · Ctrl+click for multiple PDFs</div>
+    <button class="clear-btn" onclick="clearAll()">✕ clear all</button>
+  </div>
+
+  <button class="run-btn" id="runBtn" onclick="runComparison()" disabled>▶  RUN COMPARISON</button>
+
+  <div id="progressCard" style="display:none" class="progress-card">
+    <div class="prog-lbl" id="progLabel">Working…</div>
+    <div class="prog-bar"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+    <div style="color:#222;font-size:8px;margin-top:5px">Concrete-focused analysis in progress…</div>
+  </div>
+
+  <div id="errorCard" style="display:none" class="error-card">
+    <div style="color:#D95F5F;font-weight:700;margin-bottom:3px;font-size:10px">ERROR</div>
+    <div style="color:#ccc;font-size:11px" id="errorMsg"></div>
+  </div>
+
+  <div id="results" style="display:none"></div>
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const SYSTEM_PROMPT = `You are an expert concrete contractor estimator and plan reviewer for Chavez Concrete in Albuquerque, NM.
+You are comparing two revisions of structural/civil construction plan sets.
+
+YOUR JOB: Find ONLY changes that affect concrete scope of work. Ignore purely architectural finishes, HVAC, electrical circuits, plumbing fixtures, fire alarm, paint, or any non-concrete scope.
+
+CONCRETE SCOPE TO FLAG:
+- Footing types, sizes, depths, bearing capacity
+- Slab on grade: thickness, reinforcing, control joints, vapor barrier, mix design
+- Elevated slab/deck: thickness, shoring, post-tension, rebar
+- Concrete walls / shear walls / retaining walls
+- Concrete columns / pedestals
+- Concrete mix design: PSI (f'c), admixtures, air entrainment, slump
+- Rebar: size, spacing, lap length, cover, hooks, development length
+- Anchor bolts / embed plates / hardware in concrete
+- Grade beams / pile caps / mat foundations
+- Concrete topping slabs
+- Any dimension change to a concrete element
+- New buildings or areas added (new concrete scope)
+- Deleted buildings or scope reductions
+- Special inspection requirements for concrete
+
+For each change, extract:
+1. building: Building letter/number (e.g. "Building G", "Building K", "All Buildings") — scan sheet title and notes carefully
+2. sheet: Sheet number and title (e.g. "S-101 Foundation Plan — Bldg G")
+3. concreteType: one of: FOOTING, SLAB_ON_GRADE, ELEVATED_SLAB, WALL, COLUMN, MIX_DESIGN, REBAR, EMBED_HARDWARE, GRADE_BEAM, TOPPING, DIMENSION, NEW_SCOPE, DELETED_SCOPE, SPECIAL_INSPECT
+4. type: MODIFIED, ADDED, or DELETED
+5. severity: CRITICAL (direct cost/quantity impact), IMPORTANT (coordination or spec change), MINOR (clarification only)
+6. description: Specific, exact description — include actual values (e.g. "Footing F3 width increased from 3'-0\" to 3'-6\"")
+7. oldValue: exact previous value/text
+8. newValue: exact new value/text
+9. fieldNote: short actionable note for foreman or estimator
+10. costHint: brief cost direction (e.g. "+material: wider footing", "-scope: bldg removed", "verify unit price")
+
+IMPORTANT: Group all changes by building. If a sheet covers multiple buildings, create one entry per building affected.
+If you cannot determine the building from context, use "General / All Buildings".
+
+Respond ONLY with valid JSON:
+{"summary":"concrete scope summary","buildings":["Bldg A","Bldg G","..."],"changes":[{"id":"c1","building":"Building G","sheet":"S-101","concreteType":"FOOTING","type":"MODIFIED","severity":"CRITICAL","description":"...","oldValue":"...","newValue":"...","fieldNote":"...","costHint":"..."}]}`;
+
+const SOV_PROMPT = `You are reviewing a concrete contractor's Schedule of Values (SOV) or proposal.
+Extract all line items related to concrete scope.
+Return ONLY valid JSON:
+{"lineItems":[{"code":"1.1","description":"Footings - Type F1","unit":"CY","unitPrice":450,"quantity":120,"total":54000,"concreteType":"FOOTING","buildings":["Building G","Building K"]}]}
+Include buildings if mentioned. If unit price not shown, estimate from total/quantity.`;
+
+const CONCRETE_TYPES = {
+  FOOTING:         {label:'Footing',        color:'#E8A838'},
+  SLAB_ON_GRADE:   {label:'Slab on Grade',  color:'#4A90D9'},
+  ELEVATED_SLAB:   {label:'Elevated Slab',  color:'#9B6DD9'},
+  WALL:            {label:'Wall',           color:'#D95F5F'},
+  COLUMN:          {label:'Column',         color:'#6DBBD9'},
+  MIX_DESIGN:      {label:'Mix Design',     color:'#E87038'},
+  REBAR:           {label:'Rebar',          color:'#5BAD6F'},
+  EMBED_HARDWARE:  {label:'Embed/Hardware', color:'#aaa'},
+  GRADE_BEAM:      {label:'Grade Beam',     color:'#C8A838'},
+  TOPPING:         {label:'Topping',        color:'#8B6DD9'},
+  DIMENSION:       {label:'Dimension Chg',  color:'#D9C05F'},
+  NEW_SCOPE:       {label:'New Scope',      color:'#5BAD6F'},
+  DELETED_SCOPE:   {label:'Deleted Scope',  color:'#D95F5F'},
+  SPECIAL_INSPECT: {label:'Special Insp.',  color:'#4A90D9'},
+};
+
+let oldFiles=[], newFiles=[], sovFile=null, sovText='', allResults=null, sovItems=[];
+let activeTab='buildings', fBldg='all', fType='all', fSev='all';
+
+window.onload = () => {
+  const saved = localStorage.getItem('cc_api_key');
+  if (saved) { document.getElementById('apiKey').value=saved; document.getElementById('rememberKey').checked=true; document.getElementById('savedBadge').style.display='inline'; }
+};
+
+function handleKey(v) { if(document.getElementById('rememberKey').checked) localStorage.setItem('cc_api_key',v); checkReady(); }
+function handleRemember(c) {
+  const v=document.getElementById('apiKey').value;
+  if(c){localStorage.setItem('cc_api_key',v);document.getElementById('savedBadge').style.display='inline';}
+  else{localStorage.removeItem('cc_api_key');document.getElementById('savedBadge').style.display='none';}
+}
+function checkReady() {
+  const k=document.getElementById('apiKey').value.trim();
+  document.getElementById('runBtn').disabled=!(k&&oldFiles.length&&newFiles.length);
+}
+
+function dov(e,s){e.preventDefault();const el=document.getElementById(s+'Drop');if(el)el.style.borderColor=s==='old'?'#D95F5F':s==='new'?'#5BAD6F':'#4A90D9';}
+function dol(s){const el=document.getElementById(s+'Drop');if(el)el.style.borderColor='#252525';}
+function ddr(e,s){e.preventDefault();dol(s);const f=Array.from(e.dataTransfer.files);if(s==='sov'){if(f.length)addSOV(f);return;}const pdfs=f.filter(f=>/\.(pdf|zip)$/i.test(f.name));if(pdfs.length)addFiles(s,pdfs);}
+
+function addFiles(side,files){
+  const arr=Array.from(files);
+  if(side==='old')oldFiles=[...oldFiles,...arr];else newFiles=[...newFiles,...arr];
+  renderList(side); checkReady();
+}
+function addSOV(files){
+  sovFile=Array.from(files)[0];
+  document.getElementById('sovName').textContent=sovFile.name;
+  document.getElementById('sovName').style.color='#4A90D9';
+}
+function renderList(side){
+  const files=side==='old'?oldFiles:newFiles;
+  const el=document.getElementById(side+'List');
+  const color=side==='old'?'#D95F5F':'#5BAD6F';
+  document.getElementById(side+'Drop').style.borderColor=files.length?color:'#252525';
+  el.innerHTML=files.length?files.map(f=>`<div class="file-item">${f.name.endsWith('.zip')?'🗜 ':'📄 '}${f.name}</div>`).join('')+'<div style="color:#2a2a2a;font-size:8px;text-align:center;margin-top:3px">Click to add more</div>':'';
+}
+function clearAll(){
+  oldFiles=[];newFiles=[];sovFile=null;sovText='';sovItems=[];allResults=null;
+  ['old','new'].forEach(s=>renderList(s));
+  document.getElementById('sovName').textContent='Drop or click to upload (optional)';
+  document.getElementById('sovName').style.color='#2a2a2a';
+  document.getElementById('results').style.display='none';
+  document.getElementById('errorCard').style.display='none';
+  checkReady();
+}
+
+// ── PDF text extraction ──
+async function extractTextFromPdf(blob,name,onProgress){
+  const arr=await blob.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data:arr}).promise;
+  let text='';
+  for(let i=1;i<=pdf.numPages;i++){
+    if(onProgress)onProgress(i,pdf.numPages,name);
+    const page=await pdf.getPage(i);
+    const content=await page.getTextContent();
+    const pt=content.items.map(item=>item.str).join(' ').trim();
+    if(pt)text+=`\n[PAGE ${i}]\n${pt}`;
+  }
+  return text;
+}
+async function extractPdfsFromZip(zipFile,onStatus){
+  const zip=await JSZip.loadAsync(zipFile);
+  const entries=Object.values(zip.files).filter(f=>!f.dir&&f.name.toLowerCase().endsWith('.pdf')&&!f.name.includes('__MACOSX')).sort((a,b)=>a.name.localeCompare(b.name));
+  const pdfs=[];
+  for(let i=0;i<entries.length;i++){
+    if(onStatus)onStatus(`Extracting ${i+1}/${entries.length}: ${entries[i].name.split('/').pop()}`);
+    const blob=await entries[i].async('blob');
+    pdfs.push({name:entries[i].name.split('/').pop(),blob});
+  }
+  return pdfs;
+}
+async function filesToText(files,side,setP){
+  let all='';
+  for(const f of files){
+    if(f.name.toLowerCase().endsWith('.zip')){
+      setP(`[${side}] Extracting ZIP…`,5);
+      const pdfs=await extractPdfsFromZip(f,msg=>setP(`[${side}] ${msg}`,10));
+      for(const pdf of pdfs){
+        const text=await extractTextFromPdf(pdf.blob,pdf.name,(pg,tot)=>setP(`[${side}] ${pdf.name} ${pg}/${tot}`,Math.round(pg/tot*40)));
+        all+=`\n\n=== FILE: ${pdf.name} ===\n${text}`;
+      }
+    } else {
+      const text=await extractTextFromPdf(f,f.name,(pg,tot)=>setP(`[${side}] ${f.name} ${pg}/${tot}`,Math.round(pg/tot*40)));
+      all+=`\n\n=== FILE: ${f.name} ===\n${text}`;
+    }
+  }
+  return all;
+}
+function chunkText(text,size=12000){
+  const chunks=[];
+  for(let i=0;i<text.length;i+=size)chunks.push(text.slice(i,i+size));
+  return chunks.length?chunks:['(empty)'];
+}
+
+// ── Claude API ──
+async function callClaude(body){
+  const apiKey=document.getElementById('apiKey').value.trim();
+  const resp=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify(body)
+  });
+  if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error?.message||`HTTP ${resp.status}`);}
+  const data=await resp.json();
+  const text=(data.content||[]).map(c=>c.text||'').join('');
+  try{return JSON.parse(text.replace(/```json|```/g,'').trim());}
+  catch{return null;}
+}
+
+function setP(label,pct){
+  document.getElementById('progLabel').textContent=label;
+  document.getElementById('progFill').style.width=(pct||0)+'%';
+}
+
+async function runComparison(){
+  const apiKey=document.getElementById('apiKey').value.trim();
+  if(!apiKey||!oldFiles.length||!newFiles.length)return;
+  document.getElementById('runBtn').disabled=true;
+  document.getElementById('runBtn').textContent='⏳  WORKING...';
+  document.getElementById('progressCard').style.display='block';
+  document.getElementById('errorCard').style.display='none';
+  document.getElementById('results').style.display='none';
+
+  try {
+    // Extract SOV if provided
+    if(sovFile && !sovText){
+      setP('Reading SOV / Proposal…',2);
+      sovText=await extractTextFromPdf(sovFile,sovFile.name,()=>{});
+      // Parse SOV
+      const sovRes=await callClaude({model:'claude-sonnet-4-5',max_tokens:2000,system:SOV_PROMPT,messages:[{role:'user',content:`Extract concrete line items from this SOV:\n${sovText.slice(0,8000)}`}]});
+      if(sovRes?.lineItems) sovItems=sovRes.lineItems;
+    }
+
+    setP('Reading OLD plan set…',5);
+    const oldText=await filesToText(oldFiles,'OLD',setP);
+    setP('Reading NEW plan set…',5);
+    const newText=await filesToText(newFiles,'NEW',setP);
+
+    document.getElementById('runBtn').textContent='🔍  ANALYZING...';
+    const oldChunks=chunkText(oldText);
+    const newChunks=chunkText(newText);
+    const total=Math.max(oldChunks.length,newChunks.length);
+    const allChanges=[],summaries=[],allBuildings=new Set();
+
+    for(let i=0;i<total;i++){
+      setP(`Analyzing concrete scope — section ${i+1} of ${total}…`,Math.round(i/total*100));
+      const oc=oldChunks[i]||'(not in old revision)';
+      const nc=newChunks[i]||'(deleted in new revision)';
+      const res=await callClaude({
+        model:'claude-sonnet-4-5',max_tokens:4000,system:SYSTEM_PROMPT,
+        messages:[{role:'user',content:`Compare chunk ${i+1} of ${total} for concrete scope changes.\n\nOLD PLAN TEXT:\n${oc}\n\nNEW PLAN TEXT:\n${nc}\n\nReturn only JSON with concrete changes.`}]
+      });
+      if(res?.changes?.length){
+        res.changes.forEach(c=>{allChanges.push(c);if(c.building)allBuildings.add(c.building);});
+      }
+      if(res?.summary)summaries.push(res.summary);
+      if(res?.buildings)res.buildings.forEach(b=>allBuildings.add(b));
+    }
+
+    allResults={changes:allChanges,summary:summaries.join(' '),buildings:[...allBuildings].sort()};
+    document.getElementById('progressCard').style.display='none';
+    renderResults();
+  } catch(e){
+    document.getElementById('progressCard').style.display='none';
+    document.getElementById('errorCard').style.display='block';
+    document.getElementById('errorMsg').textContent=e.message;
+  }
+  document.getElementById('runBtn').disabled=false;
+  document.getElementById('runBtn').textContent='▶  RUN COMPARISON';
+}
+
+// ── Badges ──
+function typeBadge(t){const c={MODIFIED:'#E8A838',ADDED:'#5BAD6F',DELETED:'#D95F5F'}[t]||'#888';return `<span class="badge" style="color:${c};border-color:${c}44;background:${c}22">${t}</span>`;}
+function sevBadge(s){const c={CRITICAL:'#D95F5F',IMPORTANT:'#E8A838',MINOR:'#555'}[s]||'#555';return `<span class="badge" style="color:${c};border-color:${c}44;background:${c}22">${s}</span>`;}
+function ctBadge(ct){const t=CONCRETE_TYPES[ct]||{label:ct,color:'#888'};return `<span class="badge" style="color:${t.color};border-color:${t.color}44;background:${t.color}22">${t.label}</span>`;}
+
+// ── Render ──
+function renderResults(){
+  if(!allResults)return;
+  const {changes,summary,buildings}=allResults;
+  const crit=changes.filter(c=>c.severity==='CRITICAL').length;
+  const imp=changes.filter(c=>c.severity==='IMPORTANT').length;
+  const bldgCount=[...new Set(changes.map(c=>c.building).filter(Boolean))].length;
+  const project=document.getElementById('projectName').value||'Chavez Concrete';
+
+  let filtered=changes.filter(c=>{
+    if(fBldg!=='all'&&c.building!==fBldg)return false;
+    if(fType!=='all'&&c.concreteType!==fType)return false;
+    if(fSev!=='all'&&c.severity!==fSev)return false;
+    return true;
+  });
+
+  const allBldgs=[...new Set(changes.map(c=>c.building).filter(Boolean))].sort();
+
+  let html=`
+  <div class="stats">
+    <div class="stat"><div class="stat-lbl">CONCRETE CHANGES</div><div class="stat-val" style="color:#fff">${changes.length}</div></div>
+    <div class="stat"><div class="stat-lbl">CRITICAL</div><div class="stat-val" style="color:#D95F5F">${crit}</div></div>
+    <div class="stat"><div class="stat-lbl">IMPORTANT</div><div class="stat-val" style="color:#E8A838">${imp}</div></div>
+    <div class="stat"><div class="stat-lbl">BUILDINGS</div><div class="stat-val" style="color:#E8A838">${bldgCount}</div></div>
+    <div class="stat"><div class="stat-lbl">SOV ITEMS</div><div class="stat-val" style="color:#4A90D9">${sovItems.length||'—'}</div></div>
+  </div>
+  <div class="summary-card">
+    <div style="color:#333;font-size:8px;letter-spacing:2px;margin-bottom:4px">CONCRETE SCOPE SUMMARY</div>
+    <div style="color:#999;font-size:11px;line-height:1.7">${summary||'See changes below.'}</div>
+  </div>
+  <div class="tabs">
+    <button class="tab ${activeTab==='buildings'?'active':''}" onclick="setTab('buildings')">🏗  BY BUILDING</button>
+    <button class="tab ${activeTab==='types'?'active':''}" onclick="setTab('types')">🔧  BY CONCRETE TYPE</button>
+    <button class="tab ${activeTab==='field'?'active':''}" onclick="setTab('field')">⚑  FIELD SHEET</button>
+    ${sovItems.length?`<button class="tab ${activeTab==='sov'?'active':''}" onclick="setTab('sov')">💲  SOV CHECK</button>`:''}
+  </div>
+  <div class="filters">
+    <select onchange="fBldg=this.value;renderResults()">
+      <option value="all">All Buildings</option>
+      ${allBldgs.map(b=>`<option value="${b}" ${fBldg===b?'selected':''}>${b}</option>`).join('')}
+    </select>
+    <select onchange="fType=this.value;renderResults()">
+      <option value="all">All Types</option>
+      ${Object.entries(CONCRETE_TYPES).map(([k,v])=>`<option value="${k}" ${fType===k?'selected':''}>${v.label}</option>`).join('')}
+    </select>
+    <select onchange="fSev=this.value;renderResults()">
+      <option value="all">All Severity</option>
+      <option value="CRITICAL" ${fSev==='CRITICAL'?'selected':''}>Critical</option>
+      <option value="IMPORTANT" ${fSev==='IMPORTANT'?'selected':''}>Important</option>
+      <option value="MINOR" ${fSev==='MINOR'?'selected':''}>Minor</option>
+    </select>
+    <span style="color:#2a2a2a;font-size:9px">${filtered.length} of ${changes.length} changes</span>
+  </div>`;
+
+  if(activeTab==='buildings'){
+    const bldgs=[...new Set(filtered.map(c=>c.building).filter(Boolean))].sort();
+    if(!bldgs.length){html+=`<div class="no-results">No concrete changes match filter.</div>`;}
+    else {
+      bldgs.forEach(bldg=>{
+        const bChanges=filtered.filter(c=>c.building===bldg);
+        const bCrit=bChanges.filter(c=>c.severity==='CRITICAL').length;
+        const bImp=bChanges.filter(c=>c.severity==='IMPORTANT').length;
+        html+=`<div class="bldg-group">
+          <div class="bldg-header" onclick="toggleBldg('b_${bldg.replace(/\s/g,'_')}')">
+            <span style="font-size:16px">🏗</span>
+            <span class="bldg-name">${bldg}</span>
+            <div class="bldg-counts">
+              ${bCrit?`<span class="bcount" style="background:#D95F5F22;color:#D95F5F;border:1px solid #D95F5F44">${bCrit} CRITICAL</span>`:''}
+              ${bImp?`<span class="bcount" style="background:#E8A83822;color:#E8A838;border:1px solid #E8A83844">${bImp} IMPORTANT</span>`:''}
+              <span class="bcount" style="background:#1e1e1e;color:#555">${bChanges.length} total</span>
+            </div>
+            <span style="color:#333;font-size:11px;margin-left:8px" id="chev_b_${bldg.replace(/\s/g,'_')}">▼</span>
+          </div>
+          <div id="b_${bldg.replace(/\s/g,'_')}">
+            ${bChanges.map((c,i)=>changeCard(c,i)).join('')}
+          </div>
+        </div>`;
+      });
+    }
+  }
+
+  else if(activeTab==='types'){
+    const types=[...new Set(filtered.map(c=>c.concreteType).filter(Boolean))].sort();
+    if(!types.length){html+=`<div class="no-results">No concrete changes match filter.</div>`;}
+    else {
+      types.forEach(type=>{
+        const tChanges=filtered.filter(c=>c.concreteType===type);
+        const ct=CONCRETE_TYPES[type]||{label:type,color:'#888'};
+        html+=`<div class="bldg-group">
+          <div class="bldg-header" onclick="toggleBldg('t_${type}')">
+            <span class="bldg-name" style="color:${ct.color}">${ct.label}</span>
+            <span class="bcount" style="background:#1e1e1e;color:#555;margin-left:auto">${tChanges.length} changes</span>
+            <span style="color:#333;font-size:11px;margin-left:8px" id="chev_t_${type}">▼</span>
+          </div>
+          <div id="t_${type}">
+            ${tChanges.map((c,i)=>changeCard(c,i,true)).join('')}
+          </div>
+        </div>`;
+      });
+    }
+  }
+
+  else if(activeTab==='field'){
+    const cItems=filtered.filter(c=>c.severity==='CRITICAL');
+    const iItems=filtered.filter(c=>c.severity==='IMPORTANT');
+    html+=`<div>
+      <div class="field-header">
+        <div style="color:#E8A838;font-family:monospace;font-size:11px;font-weight:700;letter-spacing:2px">⚑ FIELD SHEET — CONCRETE CHANGES</div>
+        <button class="print-btn" onclick="printField()">🖨 PRINT / SAVE PDF</button>
+      </div>`;
+    ['CRITICAL','IMPORTANT'].forEach(sev=>{
+      const items=sev==='CRITICAL'?cItems:iItems;
+      const color=sev==='CRITICAL'?'#D95F5F':'#E8A838';
+      html+=`<div style="margin-bottom:16px">
+        <div style="color:${color};font-family:monospace;font-size:10px;font-weight:700;letter-spacing:1px;margin-bottom:7px;padding-bottom:4px;border-bottom:1px solid ${color}33">${sev==='CRITICAL'?'🔴':'🟡'} ${sev} — ${items.length}</div>`;
+      if(!items.length){html+=`<div style="color:#333;font-size:11px;font-style:italic">None</div>`;}
+      else {
+        // Group by building
+        const bldgs=[...new Set(items.map(c=>c.building).filter(Boolean))].sort();
+        bldgs.forEach(b=>{
+          const bi=items.filter(c=>c.building===b);
+          html+=`<div style="margin-bottom:10px">
+            <div style="color:#E8A838;font-size:9px;font-family:monospace;margin-bottom:4px;letter-spacing:1px">🏗 ${b}</div>
+            ${bi.map(c=>`<div style="display:flex;gap:8px;margin-bottom:4px;font-size:11px;color:#999;align-items:flex-start">
+              <span style="color:${color};min-width:8px">▸</span>
+              <div><span style="color:#fff;font-weight:700">${c.sheet}</span> ${ctBadge(c.concreteType)} ${c.description}${c.costHint?` <span style="color:#4A90D9;font-size:9px">[${c.costHint}]</span>`:''}${c.fieldNote?` <span style="color:#E8A838"> ✦ ${c.fieldNote}</span>`:''}</div>
+            </div>`).join('')}
+          </div>`;
+        });
+      }
+      html+=`</div>`;
+    });
+    html+=`</div>`;
+    window._fieldData={cItems,iItems,project,allBldgs};
+  }
+
+  else if(activeTab==='sov' && sovItems.length){
+    // Match SOV items to changes
+    html+=`<div class="sov-section">
+      <div style="color:#4A90D9;font-size:9px;letter-spacing:2px;margin-bottom:10px">SOV / PROPOSAL LINE ITEMS vs PLAN CHANGES</div>`;
+    sovItems.forEach(item=>{
+      const related=changes.filter(c=>
+        (item.concreteType&&c.concreteType===item.concreteType)||
+        (item.description&&c.description&&c.description.toLowerCase().includes(item.description.toLowerCase().split(' ')[0]))
+      );
+      const impactColor=related.filter(c=>c.severity==='CRITICAL').length?'#D95F5F':related.length?'#E8A838':'#555';
+      html+=`<div class="sov-item">
+        <div class="sov-code">${item.code||'—'}</div>
+        <div class="sov-desc">${item.description}</div>
+        <div style="color:#555;font-size:9px;min-width:120px;text-align:right">
+          ${item.unitPrice?`$${item.unitPrice.toLocaleString()}/${item.unit||'ea'}`:''} 
+          ${item.total?`| $${item.total.toLocaleString()} total`:''}
+        </div>
+        <div>
+          <span class="sov-impact" style="background:${impactColor}22;color:${impactColor};border:1px solid ${impactColor}44">
+            ${related.length?`${related.length} change${related.length>1?'s':''}  ⚠`:'no changes'}
+          </span>
+        </div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  const r=document.getElementById('results');
+  r.innerHTML=html;
+  r.style.display='block';
+}
+
+function changeCard(c,i,showBldg=false){
+  const bc={CRITICAL:'crit',IMPORTANT:'imp',MINOR:''}[c.severity]||'';
+  return `<div class="change ${bc}">
+    <div class="change-head" onclick="toggleChange('cc${i}_${c.id||i}')">
+      <div class="change-num">#${i+1}</div>
+      <div class="change-body">
+        <div class="change-meta">
+          <span class="change-sheet">${c.sheet||'—'}</span>
+          ${showBldg&&c.building?`<span style="color:#E8A838;font-size:9px;font-family:monospace">${c.building}</span>`:''}
+          ${ctBadge(c.concreteType)} ${typeBadge(c.type)} ${sevBadge(c.severity)}
+        </div>
+        <div class="change-desc">${c.description||''}</div>
+        ${c.costHint?`<div style="color:#4A90D9;font-size:9px;margin-top:2px">💲 ${c.costHint}</div>`:''}
+      </div>
+      <div style="color:#2a2a2a;font-size:11px;flex-shrink:0" id="chev_cc${i}_${c.id||i}">▼</div>
+    </div>
+    <div class="change-detail" id="det_cc${i}_${c.id||i}" style="display:none">
+      ${c.oldValue?`<div class="before"><div class="dl" style="color:#D95F5F">BEFORE</div><div class="dv">${c.oldValue}</div></div>`:''}
+      ${c.newValue?`<div class="after"><div class="dl" style="color:#5BAD6F">AFTER</div><div class="dv">${c.newValue}</div></div>`:''}
+      ${c.fieldNote?`<div class="fnote"><div class="dl" style="color:#E8A838">⚑ FOREMAN NOTE</div><div class="dv">${c.fieldNote}</div></div>`:''}
+      ${c.costHint?`<div class="sovmatch"><div class="dl" style="color:#4A90D9">💲 COST DIRECTION</div><div class="dv">${c.costHint}</div></div>`:''}
+    </div>
+  </div>`;
+}
+
+function toggleBldg(id){
+  const el=document.getElementById(id);
+  const chev=document.getElementById('chev_'+id);
+  if(!el)return;
+  const open=el.style.display!=='none'&&el.style.display!=='';
+  el.style.display=open?'none':'block';
+  if(chev)chev.textContent=open?'▶':'▼';
+}
+function toggleChange(id){
+  const det=document.getElementById('det_'+id);
+  const chev=document.getElementById('chev_'+id);
+  if(!det)return;
+  const open=det.style.display!=='none';
+  det.style.display=open?'none':'flex';
+  if(chev)chev.textContent=open?'▼':'▲';
+}
+function setTab(t){activeTab=t;renderResults();}
+
+function printField(){
+  const d=window._fieldData;
+  if(!d)return;
+  const w=window.open('','_blank');
+  const bldgSection=(items,color)=>{
+    const bldgs=[...new Set(items.map(c=>c.building).filter(Boolean))].sort();
+    return bldgs.map(b=>{
+      const bi=items.filter(c=>c.building===b);
+      return `<div style="margin-bottom:10px"><div style="font-weight:700;font-size:10px;color:#555;margin-bottom:3px">🏗 ${b}</div>
+      ${bi.map(c=>`<div style="border-bottom:1px solid #eee;padding:3px 0;display:flex;gap:8px"><div style="font-weight:700;min-width:90px;font-size:10px">${c.sheet}</div>
+      <div><span style="font-size:8px;background:#eee;padding:1px 4px;border-radius:2px">${(CONCRETE_TYPES[c.concreteType]||{label:c.concreteType}).label}</span> ${c.description}${c.costHint?` <span style="color:#0055aa;font-size:9px">[${c.costHint}]</span>`:''}${c.fieldNote?` <span style="color:#b06000;font-style:italic">→ ${c.fieldNote}</span>`:''}</div></div>`).join('')}
+      </div>`;
+    }).join('');
+  };
+  w.document.write(`<html><head><title>Field Sheet — ${d.project}</title><style>
+    body{font-family:Arial,sans-serif;font-size:11px;margin:20px;color:#000}
+    h1{font-size:15px;border-bottom:3px solid #000;padding-bottom:5px}
+    .meta{font-size:9px;color:#666;margin-bottom:12px}
+    h2{font-size:11px;background:#222;color:#fff;padding:3px 7px;margin:14px 0 6px}
+  </style></head><body>
+  <h1>FIELD SHEET — CONCRETE CHANGES — ${d.project}</h1>
+  <div class="meta">Generated: ${new Date().toLocaleString()} | Critical: ${d.cItems.length} | Important: ${d.iItems.length}</div>
+  <h2>🔴 CRITICAL — ${d.cItems.length}</h2>${bldgSection(d.cItems,'#D95F5F')}
+  <h2>🟡 IMPORTANT — ${d.iItems.length}</h2>${bldgSection(d.iItems,'#E8A838')}
+  </body></html>`);
+  w.document.close(); setTimeout(()=>w.print(),300);
+}
+</script>
+</body>
 </html>
